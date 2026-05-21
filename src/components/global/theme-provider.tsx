@@ -18,9 +18,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem("theme") as Theme;
-    const initialTheme = saved === "dark" ? "dark" : "light";
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle("dark", initialTheme === "dark");
+    if (saved === "dark" || saved === "light") {
+      setTheme(saved);
+      document.documentElement.classList.toggle("dark", saved === "dark");
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark");
+      document.documentElement.classList.add("dark");
+    }
   }, []);
 
   const toggleTheme = () => {
@@ -30,6 +34,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.toggle("dark", newTheme === "dark");
   };
 
+  // Durante o SSR, renderiza sem o contexto
   if (!mounted) {
     return <>{children}</>;
   }
@@ -44,7 +49,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider");
+    // Durante o SSR, retorna valores padrão em vez de erro
+    return { theme: "light" as Theme, toggleTheme: () => {} };
   }
   return context;
 };
